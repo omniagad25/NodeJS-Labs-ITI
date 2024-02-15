@@ -1,26 +1,13 @@
 const Todos = require('../models/todos');
+const CustomError = require('../lib/custom-error');
 
-class CustomError extends Error {
-  constructor(message, status) {
-    super(message);
-    this.status = status;
-  }
-}
-
-const find = async (query) => {
-  if (!query.status) {
-    const todos = await Todos.find().limit(query.limit).skip(query.skip).populate('userId')
-      .exec()
-      .catch((err) => {
-        throw new CustomError(err.message, 422);
-      });
-    return todos;
-  }
-  const todos = await Todos.find({ status: query.status }).limit(query.limit).skip(query.skip).populate('userId')
+const find = async (query, id) => {
+  const todos = await Todos.find({ status: query.status, userId: id }).limit(query.limit || 10).skip(query.skip || 0).populate('userId')
     .exec()
     .catch((err) => {
       throw new CustomError(err.message, 422);
     });
+
   return todos;
 };
 
@@ -39,7 +26,11 @@ const deleteTodo = async (id) => {
   return todoToDelete;
 };
 const updateTodo = async (id, body) => {
-  const todoToUpdate = await Todos.updateOne({ _id: id }, body, { runValidators: true })
+  const todoToUpdate = await Todos.findOneAndUpdate(
+    { _id: id, userId: body.userId },
+    body,
+    { new: true },
+  )
     .catch((err) => {
       throw new CustomError(err.message, 422);
     });

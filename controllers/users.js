@@ -1,13 +1,9 @@
-// const { query } = require('express');
+const jwt = require('jsonwebtoken');
 const Users = require('../models/users');
 const Todos = require('../models/todos');
+const CustomError = require('../lib/custom-error');
 
-class CustomError extends Error {
-  constructor(message, status) {
-    super(message);
-    this.status = status;
-  }
-}
+const secretKey = process.env.key || 'test';
 
 const create = (input) => {
   const user = Users.create(input).catch((err) => {
@@ -16,13 +12,15 @@ const create = (input) => {
   return user;
 };
 
-// const userLogin = async (username, password) => {
-//   const user = await Users.findOne({ userName: username})
-//   .catch((err) => {
-//     throw new CustomError('Unauthenticated', 401);
-//   }
-//   )
-// }
+const userLogin = async (username, password) => {
+  const user = await Users.findOne({ username }).exec();
+  const valid = await user.verifyPassword(password);
+  if (!user || !valid) {
+    return new CustomError('Unauthenticated', 401);
+  }
+  user.token = jwt.sign({ id: user.id }, secretKey, { expiresIn: '7d' });
+  return user;
+};
 
 const findOne = (id) => {
   Users.findOne(id).catch((err) => {
@@ -68,4 +66,5 @@ module.exports = {
   deleteUser,
   updateUser,
   getUserTodos,
+  userLogin,
 };
