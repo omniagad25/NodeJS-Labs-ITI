@@ -39,7 +39,8 @@ router.use((req, res, next) => {
 });
 
 router.get('/', async (req, res, next) => {
-  const [err, user] = await asyncWrapper(UsersController.getAllUsers());
+  const [err, user] = await asyncWrapper(UsersController.getUser(req.userId));
+  // const [err, user] = await asyncWrapper(UsersController.getAllUsers());
   if (!err) {
     return res.json(user);
   }
